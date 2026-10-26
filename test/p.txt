@@ -1,0 +1,1 @@
+Describe this animated cartoon frame in 2 sentences: characters, setting, is it a fully rendered scene (not blank, not broken)? Answer RENDERED_OK or BROKEN first.
