@@ -1,0 +1,28 @@
+name: render
+on:
+  workflow_dispatch:
+    inputs:
+      html: {description: "path to film html", required: true}
+      dur: {description: "duration seconds", required: true}
+      groups: {description: 'JSON list of chunk lists, e.g. ["52,53,54","55,56,57"]', required: true}
+      size: {description: "WxH", required: false, default: "1920x1080"}
+jobs:
+  r:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        g: ${{ fromJSON(github.event.inputs.groups) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: pip install -q playwright numpy pillow scipy && python -m playwright install --with-deps chromium
+      - run: mkdir -p out && CHUNKS="${{ matrix.g }}" python render_gh.py "${{ github.event.inputs.html }}" "${{ github.event.inputs.dur }}" out/part 30 "${{ github.event.inputs.size }}"
+      - id: n
+        run: echo "name=parts_$(echo '${{ matrix.g }}' | tr ',' '_')" >> $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@v4
+        with: {name: "${{ steps.n.outputs.name }}", path: "out/part_*.mp4", retention-days: 3}
